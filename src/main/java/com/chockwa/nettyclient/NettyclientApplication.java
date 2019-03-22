@@ -19,6 +19,6 @@ public class NettyclientApplication implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        nettyClient.run("localhost", 8899, new ClientHandler());
+        nettyClient.run(new ClientHandler());
     }
 }

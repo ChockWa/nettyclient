@@ -1,0 +1,7 @@
+server:
+  port: 7777
+
+netty:
+  server:
+    host: 193.112.46.15
+    port: 18899
