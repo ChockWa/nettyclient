@@ -51,7 +51,7 @@ public class NettyClient {
             });
             ChannelFuture f = b.connect(nettyProperties.getHost(), nettyProperties.getPort()).sync(); // (5)
             sendRegister(f);
-            sendTestData(f);
+//            sendTestData(f);
             f.channel().closeFuture().sync();
         } finally {
             workerGroup.shutdownGracefully();
@@ -121,7 +121,7 @@ public class NettyClient {
     private void sendRegister(ChannelFuture f) throws URISyntaxException {
         URI uri = new URI("http://" + nettyProperties.getHost() + ":" + nettyProperties.getPort());
 //            String msg = "{\"HeartBeat\":{\"ipaddr\":\"192.168.1.100\",\"ipc_id\":\"ipc_201903170001\",\"now_time\":" + System.currentTimeMillis() + "}}";
-        String reg = "{\"RegisterIPC\":{\"devname\":\"test\",\"ipaddr\":\"192.168.1.100\",\"user\":\"ipc_name_gate1\",\"pass\":\"123456\",\"serialno\":\"eff50e18-e3d3862b\"}}";
+        String reg = "{\"RegisterIPC\":{\"devname\":\"test\",\"ipaddr\":\"192.168.1.100\",\"user\":\"test\",\"pass\":\"123456\",\"serialno\":\"eff50e18-e3d3862b\"}}";
         DefaultFullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST,
                 uri.toASCIIString(), Unpooled.wrappedBuffer(reg.getBytes(CharsetUtil.UTF_8)));
 
