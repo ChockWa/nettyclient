@@ -20,6 +20,7 @@
         <lombok.version>1.18.4</lombok.version>
         <hutool.version>4.1.1</hutool.version>
         <commons.io.version>2.5</commons.io.version>
+        <commons.lang.version>2.6</commons.lang.version>
 
     </properties>
 
@@ -60,6 +61,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>${commons.lang.version}</version>
         </dependency>
     </dependencies>
 
