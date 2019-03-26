@@ -19,10 +19,16 @@
         <fastjson.version>1.2.47</fastjson.version>
         <lombok.version>1.18.4</lombok.version>
         <hutool.version>4.1.1</hutool.version>
+        <commons.io.version>2.5</commons.io.version>
 
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${commons.io.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>

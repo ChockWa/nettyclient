@@ -1,10 +1,6 @@
 package com.chockwa.nettyclient.netty;
 
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.json.JSONUtil;
-import com.chockwa.nettyclient.alarmInfo.*;
 import com.chockwa.nettyclient.properties.NettyProperties;
-import com.sun.org.apache.bcel.internal.generic.ALOAD;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
@@ -14,11 +10,16 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.CharsetUtil;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 
 /**
  * @auther: zhuohuahe
@@ -32,7 +33,7 @@ public class NettyClient {
     @Autowired
     private NettyProperties nettyProperties;
 
-    public void run(ChannelHandler... handlers) throws InterruptedException, URISyntaxException {
+    public void run(ChannelHandler... handlers) throws InterruptedException, URISyntaxException, IOException {
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
             Bootstrap b = new Bootstrap(); // (1)
@@ -51,59 +52,64 @@ public class NettyClient {
             });
             ChannelFuture f = b.connect(nettyProperties.getHost(), nettyProperties.getPort()).sync(); // (5)
             sendRegister(f);
-//            sendTestData(f);
+            sendTestData(f);
             f.channel().closeFuture().sync();
         } finally {
             workerGroup.shutdownGracefully();
         }
     }
 
-    private void sendTestData(ChannelFuture f) throws URISyntaxException {
+    private void sendTestData(ChannelFuture f) throws URISyntaxException, IOException {
 
-        AlarmInfoPlateResult alarmInfoPlateResult = new AlarmInfoPlateResult();
-        AlarmInfoPlate alarmInfoPlate = new AlarmInfoPlate();
+        final Resource resource = new ClassPathResource("alarminfotest.json");
 
-        Car car = new Car();
-        car.setCarColor("white");
-        car.setCarType(1);
-        car.setDirection(0);
-        alarmInfoPlate.setCar(car);
-        alarmInfoPlate.setChannel(1);
+        String data = IOUtils.toString(resource.getInputStream(), Charset.defaultCharset());
 
-        Drive drive = new Drive();
-        drive.setDriveType(0);
-        drive.setRecognize(0);
-        drive.setSpeed(60);
-        alarmInfoPlate.setDrive(drive);
+//        AlarmInfoPlateResult alarmInfoPlateResult = new AlarmInfoPlateResult();
+//        AlarmInfoPlate alarmInfoPlate = new AlarmInfoPlate();
+//
+//        Car car = new Car();
+//        car.setCarColor("white");
+//        car.setCarType(1);
+//        car.setDirection(0);
+//        alarmInfoPlate.setCar(car);
+//        alarmInfoPlate.setChannel(1);
+//
+//        Drive drive = new Drive();
+//        drive.setDriveType(0);
+//        drive.setRecognize(0);
+//        drive.setSpeed(60);
+//        alarmInfoPlate.setDrive(drive);
+//
+//        Image image = new Image();
+//        image.setFile("yyy");
+//        image.setFileLength(50);
+//        image.setThumb("50");
+//        image.setThumbLength(3);
+//        alarmInfoPlate.setImage(image);
+//
+//
+//        alarmInfoPlate.setNowTime(System.currentTimeMillis());
+//        alarmInfoPlate.setTimestamp(System.currentTimeMillis());
+//
+//        Plate plate = new Plate();
+//        plate.setConfidence(100);
+//        plate.setLicense("粤B54321");
+//        plate.setPlateColor(1);
+//        plate.setPlateType(1);
+//        Rect rect = new Rect();
+//        rect.setLeft(0);
+//        rect.setRight(1);
+//        rect.setTop(5);
+//        rect.setBottom(30);
+//
+//        plate.setRect(rect);
+//
+//        alarmInfoPlate.setPlate(plate);
+//        alarmInfoPlateResult.setAlarmInfoPlate(alarmInfoPlate);
+//
+//        String data = JSONUtil.toJsonStr(alarmInfoPlateResult);
 
-        Image image = new Image();
-        image.setFile("yyy");
-        image.setFileLength(50);
-        image.setThumb("50");
-        image.setThumbLength(3);
-        alarmInfoPlate.setImage(image);
-
-
-        alarmInfoPlate.setNowTime(System.currentTimeMillis());
-        alarmInfoPlate.setTimestamp(System.currentTimeMillis());
-
-        Plate plate = new Plate();
-        plate.setConfidence(100);
-        plate.setLicense("粤B54321");
-        plate.setPlateColor(1);
-        plate.setPlateType(1);
-        Rect rect = new Rect();
-        rect.setLeft(0);
-        rect.setRight(1);
-        rect.setTop(5);
-        rect.setBottom(30);
-
-        plate.setRect(rect);
-
-        alarmInfoPlate.setPlate(plate);
-        alarmInfoPlateResult.setAlarmInfoPlate(alarmInfoPlate);
-
-        String data = JSONUtil.toJsonStr(alarmInfoPlateResult);
         URI uri = new URI("http://" + nettyProperties.getHost() + ":" + nettyProperties.getPort());
 //            String msg = "{\"HeartBeat\":{\"ipaddr\":\"192.168.1.100\",\"ipc_id\":\"ipc_201903170001\",\"now_time\":" + System.currentTimeMillis() + "}}";
         DefaultFullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST,
