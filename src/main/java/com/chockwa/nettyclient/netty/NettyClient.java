@@ -52,7 +52,7 @@ public class NettyClient {
             });
             ChannelFuture f = b.connect(nettyProperties.getHost(), nettyProperties.getPort()).sync(); // (5)
             sendRegister(f);
-//            sendTestData(f);
+            sendTestData(f);
             f.channel().closeFuture().sync();
         } finally {
             workerGroup.shutdownGracefully();
@@ -62,6 +62,7 @@ public class NettyClient {
     private void sendTestData(ChannelFuture f) throws URISyntaxException, IOException {
 
         final Resource resource = new ClassPathResource("alarminfotest.json");
+//        final Resource resource = new ClassPathResource("alarminfotest2.json");
 
         String data = IOUtils.toString(resource.getInputStream(), Charset.defaultCharset());
 
@@ -82,7 +83,7 @@ public class NettyClient {
     private void sendRegister(ChannelFuture f) throws URISyntaxException {
         URI uri = new URI("http://" + nettyProperties.getHost() + ":" + nettyProperties.getPort());
 //            String msg = "{\"HeartBeat\":{\"ipaddr\":\"192.168.1.100\",\"ipc_id\":\"ipc_201903170001\",\"now_time\":" + System.currentTimeMillis() + "}}";
-        String reg = "{\"RegisterIPC\":{\"devname\":\"测试设备001\",\"ipaddr\":\"192.168.1.100\",\"user\":\"test\",\"pass\":\"123456\",\"serialno\":\"testdevice\"}}";
+        String reg = "{\"RegisterIPC\":{\"devname\":\"测试设备001\",\"ipaddr\":\"192.168.1.100\",\"user\":\"admin\",\"pass\":\"admin\",\"serialno\":\"testdevice\"}}";
         DefaultFullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST,
                 uri.toASCIIString(), Unpooled.wrappedBuffer(reg.getBytes(CharsetUtil.UTF_8)));
 
