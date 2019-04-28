@@ -15,11 +15,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @auther: zhuohuahe
@@ -27,11 +32,14 @@ import java.nio.charset.Charset;
  * @description:
  */
 @Component
+@RestController
 public class NettyClient {
 
 
     @Autowired
     private NettyProperties nettyProperties;
+
+    private ChannelFuture channelFuture;
 
     public void run(ChannelHandler... handlers) throws InterruptedException, URISyntaxException, IOException {
         EventLoopGroup workerGroup = new NioEventLoopGroup();
@@ -50,19 +58,22 @@ public class NettyClient {
                             .addLast(handlers);
                 }
             });
-            ChannelFuture f = b.connect(nettyProperties.getHost(), nettyProperties.getPort()).sync(); // (5)
-            sendRegister(f);
-            sendTestData(f);
-            f.channel().closeFuture().sync();
+            channelFuture = b.connect(nettyProperties.getHost(), nettyProperties.getPort()).sync(); // (5)
+            sendRegister();
+            channelFuture.channel().closeFuture().sync();
         } finally {
             workerGroup.shutdownGracefully();
         }
     }
 
-    private void sendTestData(ChannelFuture f) throws URISyntaxException, IOException {
-
-        final Resource resource = new ClassPathResource("alarminfotest.json");
-//        final Resource resource = new ClassPathResource("alarminfotest2.json");
+    @GetMapping("/test/{index}")
+    public Map<String, Object> sendTestData(@PathVariable(value = "index", required = false) Integer index) throws URISyntaxException, IOException {
+        Resource resource;
+        if (index == null || index == 1) {
+            resource = new ClassPathResource("alarminfotest.json");
+        } else {
+            resource = new ClassPathResource("alarminfotest2.json");
+        }
 
         String data = IOUtils.toString(resource.getInputStream(), Charset.defaultCharset());
 
@@ -70,20 +81,23 @@ public class NettyClient {
 //            String msg = "{\"HeartBeat\":{\"ipaddr\":\"192.168.1.100\",\"ipc_id\":\"ipc_201903170001\",\"now_time\":" + System.currentTimeMillis() + "}}";
         DefaultFullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST,
                 uri.toASCIIString(), Unpooled.wrappedBuffer(data.getBytes(CharsetUtil.UTF_8)));
-
         // 构建http请求
         request.headers().set(HttpHeaderNames.HOST, nettyProperties.getHost());
         request.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
         request.headers().set(HttpHeaderNames.CONTENT_LENGTH, request.content().readableBytes());
         request.headers().set("messageType", "normal");
         request.headers().set("businessType", "testServerState");
-        f.channel().writeAndFlush(request);
+        channelFuture.channel().writeAndFlush(request);
+        Map<String, Object> result = new HashMap<>();
+        result.put("code", 0);
+        result.put("msg", "success");
+        return result;
     }
 
-    private void sendRegister(ChannelFuture f) throws URISyntaxException {
+    private void sendRegister() throws URISyntaxException {
         URI uri = new URI("http://" + nettyProperties.getHost() + ":" + nettyProperties.getPort());
 //            String msg = "{\"HeartBeat\":{\"ipaddr\":\"192.168.1.100\",\"ipc_id\":\"ipc_201903170001\",\"now_time\":" + System.currentTimeMillis() + "}}";
-        String reg = "{\"RegisterIPC\":{\"devname\":\"测试设备001\",\"ipaddr\":\"192.168.1.100\",\"user\":\"admin\",\"pass\":\"admin\",\"serialno\":\"testdevice\"}}";
+        String reg = "{\"RegisterIPC\":{\"devname\":\"测试设备001\",\"ipaddr\":\"192.168.1.100\",\"user\":\"test\",\"pass\":\"123456\",\"serialno\":\"testdevice\"}}";
         DefaultFullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST,
                 uri.toASCIIString(), Unpooled.wrappedBuffer(reg.getBytes(CharsetUtil.UTF_8)));
 
@@ -93,6 +107,6 @@ public class NettyClient {
         request.headers().set(HttpHeaderNames.CONTENT_LENGTH, request.content().readableBytes());
         request.headers().set("messageType", "normal");
         request.headers().set("businessType", "testServerState");
-        f.channel().writeAndFlush(request);
+        channelFuture.channel().writeAndFlush(request);
     }
 }
