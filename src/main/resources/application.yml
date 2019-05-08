@@ -3,5 +3,6 @@ server:
 
 netty:
   server:
+#    host: 193.112.46.15
     host: 0.0.0.0
     port: 18899

@@ -1,9 +1,14 @@
 package com.chockwa.nettyclient.netty;
 
+import com.chockwa.nettyclient.event.EventCode;
+import com.chockwa.nettyclient.event.MessageEvent;
 import com.chockwa.nettyclient.properties.NettyProperties;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.*;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -12,6 +17,7 @@ import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.CharsetUtil;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
@@ -41,26 +47,50 @@ public class NettyClient {
 
     private ChannelFuture channelFuture;
 
-    public void run(ChannelHandler... handlers) throws InterruptedException, URISyntaxException, IOException {
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+    @Autowired
+    private ClientHandler clientHandler;
+    private Bootstrap bootstrap;
+    private EventLoopGroup workerGroup;
+
+    public void run() throws InterruptedException, URISyntaxException {
+        workerGroup = new NioEventLoopGroup();
         try {
-            Bootstrap b = new Bootstrap(); // (1)
-            b.group(workerGroup); // (2)
-            b.channel(NioSocketChannel.class); // (3)
-            b.option(ChannelOption.SO_KEEPALIVE, true); // (4)
-            b.handler(new ChannelInitializer<SocketChannel>() {
+            // (1)
+            bootstrap = new Bootstrap();
+            bootstrap.group(workerGroup); // (2)
+            bootstrap.channel(NioSocketChannel.class); // (3)
+            bootstrap.option(ChannelOption.SO_KEEPALIVE, true); // (4)
+            bootstrap.handler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 public void initChannel(SocketChannel ch) throws Exception {
                     ch.pipeline()
                             .addLast(new IdleStateHandler(0, 4, 0))
                             .addLast(new HttpResponseDecoder())
                             .addLast(new HttpRequestEncoder())
-                            .addLast(handlers);
+                            .addLast(clientHandler);
                 }
             });
-            channelFuture = b.connect(nettyProperties.getHost(), nettyProperties.getPort()).sync(); // (5)
+            channelFuture = bootstrap.connect(nettyProperties.getHost(), nettyProperties.getPort()).sync(); // (5)
             sendRegister();
             channelFuture.channel().closeFuture().sync();
+        } finally {
+            workerGroup.shutdownGracefully();
+        }
+    }
+
+
+    @EventListener
+    public void onEvent(MessageEvent event) {
+        try {
+            switch (event.getEventCode()) {
+                case EventCode.REGISTER:
+                    channelFuture = bootstrap.connect(nettyProperties.getHost(), nettyProperties.getPort()).sync(); // (5)
+                    sendRegister();
+                    channelFuture.channel().closeFuture().sync();
+                    break;
+            }
+        } catch (InterruptedException | URISyntaxException e) {
+            e.printStackTrace();
         } finally {
             workerGroup.shutdownGracefully();
         }
@@ -97,7 +127,7 @@ public class NettyClient {
     private void sendRegister() throws URISyntaxException {
         URI uri = new URI("http://" + nettyProperties.getHost() + ":" + nettyProperties.getPort());
 //            String msg = "{\"HeartBeat\":{\"ipaddr\":\"192.168.1.100\",\"ipc_id\":\"ipc_201903170001\",\"now_time\":" + System.currentTimeMillis() + "}}";
-        String reg = "{\"RegisterIPC\":{\"devname\":\"测试设备001\",\"ipaddr\":\"192.168.1.100\",\"user\":\"test\",\"pass\":\"123456\",\"serialno\":\"testdevice\"}}";
+        String reg = "{\"RegisterIPC\":{\"devname\":\"dd\",\"ipaddr\":\"192.168.1.100\",\"user\":\"test\",\"pass\":\"123456\",\"serialno\":\"dd\"}}";
         DefaultFullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.POST,
                 uri.toASCIIString(), Unpooled.wrappedBuffer(reg.getBytes(CharsetUtil.UTF_8)));
 

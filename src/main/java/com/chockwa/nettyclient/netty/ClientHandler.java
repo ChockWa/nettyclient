@@ -1,13 +1,19 @@
 package com.chockwa.nettyclient.netty;
 
+import com.chockwa.nettyclient.event.EventCode;
+import com.chockwa.nettyclient.event.MessageEvent;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Component;
 
 import java.net.URI;
 import java.time.LocalDateTime;
@@ -17,7 +23,15 @@ import java.time.LocalDateTime;
  * @date: 2019/3/19 10:36
  * @description:
  */
+@Component
+@ChannelHandler.Sharable
 public class ClientHandler extends ChannelInboundHandlerAdapter {
+
+    public final ApplicationEventPublisher eventPublisher;
+
+    public ClientHandler(ApplicationEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
+    }
 
     HttpResponse response;
 
@@ -48,6 +62,8 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
     }
 
 
+
+
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof HttpResponse) {
@@ -62,6 +78,11 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
                 System.out.println("收到心跳，" + responseStr);
             } else if (responseStr.contains("RegisterIPC_Ret")) {
                 System.out.println("收到注册回复：" + responseStr);
+                if (responseStr.contains("用户名或密码错误")) {
+                    Thread.sleep(1000);
+                    eventPublisher.publishEvent((MessageEvent.builder()
+                            .eventCode(EventCode.REGISTER).build()));
+                }
             } else {
                 System.out.println(responseStr);
             }

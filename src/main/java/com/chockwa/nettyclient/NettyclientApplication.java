@@ -14,11 +14,13 @@ public class NettyclientApplication implements CommandLineRunner {
         SpringApplication.run(NettyclientApplication.class, args);
     }
 
+
+
     @Autowired
     NettyClient nettyClient;
 
     @Override
     public void run(String... args) throws Exception {
-        nettyClient.run(new ClientHandler());
+        nettyClient.run();
     }
 }
